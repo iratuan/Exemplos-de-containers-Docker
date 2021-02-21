@@ -1,0 +1,85 @@
+version: '3'
+
+services:
+
+  pgsql:
+    image: postgres
+    container_name: dash_pgsql
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    networks:
+      - postgres-compose-network
+
+  dash_app:
+    container_name: dash_app
+    restart: always
+    volumes:
+      - .:/code
+    ports:
+      - "80:8080"
+    depends_on:
+      - pgsql
+    command: gunicorn -w 1 -b :8000 app:server
+
+
+  nginx:
+    container_name: nginx
+    restart: always
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - dash_app
+
+
+
+version: "3.3"
+
+services:
+  pgsql:
+    image: postgres
+    container_name: dash_pgsql
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    networks:
+      - postgres-compose-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "iratuan@gmail.com"
+      PGADMIN_DEFAULT_PASSWORD: "postgres"
+    ports:
+      - "16543:80"
+    depends_on:
+      - pgsql
+    networks:
+      - postgres-compose-network
+
+  dash:
+    build:
+      context: .
+      dockerfile: Dockerfile.dash
+    container_name: dash_dash
+    command: python app.py
+    volumes:
+      - .:/code
+    ports:
+      - "80:8080"
+    depends_on:
+      - pgsql
+networks:
+  postgres-compose-network:
+    driver: bridge
